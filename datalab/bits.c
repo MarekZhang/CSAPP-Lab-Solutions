@@ -337,7 +337,26 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-  return 2;
+  /*exponent value cannot be greater than 30, 正负都是，符号是直接在正数上加负号，正数部分溢出负数就溢出*/
+  /*flaot to int 是round to zero*/
+  int sign = uf >> 31;
+  int exponent = 0x7f800000 & uf;
+  int frac = 0x7fffff & uf;
+  frac = frac | 0x800000; // M隐藏的1
+  exponent = exponent >> 23;
+  if(exponent > 0x9d) // greater that 30 + 127
+    return 0x80000000u;
+  if(exponent < 127) //0.10101... rount to zero exponent - 127(bias) < 0  也包括了exponent全为0的情况
+    return 0;
+  exponent = exponent - 127;
+  if(exponent > 23)
+    frac = frac << (exponent - 23);
+  else
+    frac = frac >> (23 - exponent);
+  if(!sign)
+    return frac;
+    
+  return ~frac + 1;
 }
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -353,5 +372,16 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+  /*0x80000000 2.0 bit level representation*/
+  if(x >= 128)
+    return 0x7f800000; //positive infinety
+  if(x > -127){
+    int exponent = x + 127;
+    return exponent << 23;
+  }
+  int bitShift = x + 149;
+  if(bitShift < 0)
+    return 0;
+    
+  return 1 << bitShift;
 }
