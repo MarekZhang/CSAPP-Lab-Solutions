@@ -39,4 +39,5 @@ This is an x86-64 bomb for self-study students.
 4. bomb.dump 中找到phase_1函数对应的assembly code, mov $0x402400 %esi, 将起始地址为0x402400的char*[]起始地址作为第二个参数，然后callq <strings_not_equal>,比较第一个参数(用户输入值存储在%rdi中)和第二个参数(程序中static data 0x402400)是否相等
 ![](phase_1_assembly.png)
 5. readelf -x .rodata bomb找到0x402400字符串, 00000000 代表字符串结束符'\0',查找ascii表2e对应'.';所有phase_1答案为:<strong>Border relations with Canada have never been better.</strong>
+
 ![](phase_1_answer.png)
