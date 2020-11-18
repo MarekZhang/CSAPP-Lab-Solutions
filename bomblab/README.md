@@ -159,3 +159,65 @@ read_six_numbers:
   400fc9:	48 83 c4 18          	add    $0x18,%rsp
   400fcd:	c3                   	retq   
 ```
+
+## Phase_4
+1. 同样先检查40101a: movl	$4203983, %esi, 再次得到“%d %d", 证明phase_4同样是输入两个数字, 401029调用scanf后的%eax值必须为2同样验证了需要两个数字
+
+![](phase_4.png)
+
+2. 40102e: cmpl $0xe,0x8(%rsp), 输入的第一个数需要 <= 0xe
+3. 40103a ~ 401044 将0xe传入%edx(第三个参数寄存器), 0x0传入%esi(第二个参数寄存器), user输入的第一个数字传入%edi(第一个参数寄存器)，之后调用func4
+4. func4的小trick是400fe2: cmp  %edi,%ecx，其中edi为我们输入的第一个数字，只有edi <= ecx才会跳转400ff2, 而400ff2 将return value %eax置0，之后  400ff7: cmp %edi,%ecx 400ff9: jge 401007 再次比较edi和ecx的值 并且需要 %edi >= ecx才return 0，而return 0在phase_4中40104d中满足不引爆炸弹的必要条件，所以我们输入的数值只要与ecx通过 400fce~400fdf得到的结果相同就可以，而这个值为0xe >> 1 = 0x7
+5. 第二个值很简单401051行与0做比较，所以输入的两个值为 0x7 和 0x0
+
+```
+phase_4:
+000000000040100c <phase_4>:
+  40100c:       48 83 ec 18             sub    $0x18,%rsp
+  401010:       48 8d 4c 24 0c          lea    0xc(%rsp),%rcx
+  401015:       48 8d 54 24 08          lea    0x8(%rsp),%rdx
+  40101a:       be cf 25 40 00          mov    $0x4025cf,%esi
+  40101f:       b8 00 00 00 00          mov    $0x0,%eax
+  401024:       e8 c7 fb ff ff          callq  400bf0 <__isoc99_sscanf@plt>
+  401029:       83 f8 02                cmp    $0x2,%eax #返回值为2，需要两个digits
+  40102c:       75 07                   jne    401035 <phase_4+0x29>
+  40102e:       83 7c 24 08 0e          cmpl   $0xe,0x8(%rsp)
+  401033:       76 05                   jbe    40103a <phase_4+0x2e>
+  401035:       e8 00 04 00 00          callq  40143a <explode_bomb>
+  40103a:       ba 0e 00 00 00          mov    $0xe,%edx
+  40103f:       be 00 00 00 00          mov    $0x0,%esi
+  401044:       8b 7c 24 08             mov    0x8(%rsp),%edi
+  401048:       e8 81 ff ff ff          callq  400fce <func4>
+  40104d:       85 c0                   test   %eax,%eax
+  40104f:       75 07                   jne    401058 <phase_4+0x4c>
+  401051:       83 7c 24 0c 00          cmpl   $0x0,0xc(%rsp)
+  401056:       74 05                   je     40105d <phase_4+0x51>
+  401058:       e8 dd 03 00 00          callq  40143a <explode_bomb>
+  40105d:       48 83 c4 18             add    $0x18,%rsp
+  401061:       c3                      retq
+```
+```
+0000000000400fce <func4>:
+  400fce:       48 83 ec 08             sub    $0x8,%rsp
+  400fd2:       89 d0                   mov    %edx,%eax
+  400fd4:       29 f0                   sub    %esi,%eax
+  400fd6:       89 c1                   mov    %eax,%ecx
+  400fd8:       c1 e9 1f                shr    $0x1f,%ecx
+  400fdb:       01 c8                   add    %ecx,%eax
+  400fdd:       d1 f8                   sar    %eax
+  400fdf:       8d 0c 30                lea    (%rax,%rsi,1),%ecx
+  400fe2:       39 f9                   cmp    %edi,%ecx
+  400fe4:       7e 0c                   jle    400ff2 <func4+0x24>
+  400fe6:       8d 51 ff                lea    -0x1(%rcx),%edx
+  400fe9:       e8 e0 ff ff ff          callq  400fce <func4>
+  400fee:       01 c0                   add    %eax,%eax
+  400ff0:       eb 15                   jmp    401007 <func4+0x39>
+  400ff2:       b8 00 00 00 00          mov    $0x0,%eax
+  400ff7:       39 f9                   cmp    %edi,%ecx
+  400ff9:       7d 0c                   jge    401007 <func4+0x39>
+  400ffb:       8d 71 01                lea    0x1(%rcx),%esi
+  400ffe:       e8 cb ff ff ff          callq  400fce <func4>
+  401003:       8d 44 00 01             lea    0x1(%rax,%rax,1),%eax
+  401007:       48 83 c4 08             add    $0x8,%rsp
+  40100b:       c3                      retq
+```
