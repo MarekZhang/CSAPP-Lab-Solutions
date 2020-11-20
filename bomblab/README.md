@@ -252,7 +252,7 @@ phase_4:
   4010a8:       48 83 f8 06             cmp    $0x6,%rax
   4010ac:       75 dd                   jne    40108b <phase_5+0x29>
   4010ae:       c6 44 24 16 00          movb   $0x0,0x16(%rsp)
-  4010b3:       be 5e 24 40 00          mov    $0x40245e,%esi #正确的字符串 flyers
+  4010b3:       be 5e 24 40 00          mov    $0x40245e,%esi #正确的字符串 flyers`
   4010b8:       48 8d 7c 24 10          lea    0x10(%rsp),%rdi
   4010bd:       e8 76 02 00 00          callq  401338 <strings_not_equal>
   4010c2:       85 c0                   test   %eax,%eax
@@ -271,3 +271,106 @@ phase_4:
   4010f2:       5b                      pop    %rbx
   4010f3:       c3                      retq
 ```
+## Phase_6
+1. 第6题感觉难度提升了很多，主要是循环的嵌套导致assembly code比较复杂
+2. 另外找到$0x6032d0中这个Linked-Node数据结构非常关键。
+
+![](linkedNode.png)
+
+3. phase_6主要拆解为 1）输入六个数字 要求在区间[1,6] 2)输入的6个数字一次被7减，得到新的序列 3)新的序列对应0x6032d0中的6个nodes，会按照新的序列的顺序一次将nodes连接起来 4)连接好的nodes 要求以value值从大到小排序
+4. 答案是 4 3 2 1 6 5
+5. 将不同function的assembly code拆分开，会更容易理解程序
+
+```
+phase_6:
+  4010f4:	41 56 	pushq	%r14
+  4010f6:	41 55 	pushq	%r13
+  4010f8:	41 54 	pushq	%r12
+  4010fa:	55 	pushq	%rbp
+  4010fb:	53 	pushq	%rbx
+  4010fc:	48 83 ec 50 	subq	$80, %rsp
+  401100:	49 89 e5 	movq	%rsp, %r13
+  401103:	48 89 e6 	movq	%rsp, %rsi
+  401106:	e8 51 03 00 00 	callq	849 <read_six_numbers>
+  40110b:	49 89 e6 	movq	%rsp, %r14
+  40110e:	41 bc 00 00 00 00 	movl	$0, %r12d
+  401114:	4c 89 ed 	movq	%r13, %rbp
+  401117:	41 8b 45 00 	movl	(%r13), %eax
+  40111b:	83 e8 01 	subl	$1, %eax
+  40111e:	83 f8 05 	cmpl	$5, %eax
+  401121:	76 05 	jbe	5 <phase_6+0x34>
+  401123:	e8 12 03 00 00 	callq	786 <explode_bomb>
+  401128:	41 83 c4 01 	addl	$1, %r12d
+  40112c:	41 83 fc 06 	cmpl	$6, %r12d
+  401130:	74 21 	je	33 <phase_6+0x5f>
+  401132:	44 89 e3 	movl	%r12d, %ebx
+  401135:	48 63 c3 	movslq	%ebx, %rax
+  401138:	8b 04 84 	movl	(%rsp,%rax,4), %eax
+  40113b:	39 45 00 	cmpl	%eax, (%rbp)
+  40113e:	75 05 	jne	5 <phase_6+0x51>
+  401140:	e8 f5 02 00 00 	callq	757 <explode_bomb>
+  401145:	83 c3 01 	addl	$1, %ebx
+  401148:	83 fb 05 	cmpl	$5, %ebx
+  40114b:	7e e8 	jle	-24 <phase_6+0x41>
+  40114d:	49 83 c5 04 	addq	$4, %r13
+  401151:	eb c1 	jmp	-63 <phase_6+0x20>
+  401153:	48 8d 74 24 18 	leaq	24(%rsp), %rsi
+  401158:	4c 89 f0 	movq	%r14, %rax
+  40115b:	b9 07 00 00 00 	movl	$7, %ecx
+  401160:	89 ca 	movl	%ecx, %edx
+  401162:	2b 10 	subl	(%rax), %edx
+  401164:	89 10 	movl	%edx, (%rax)
+  401166:	48 83 c0 04 	addq	$4, %rax
+  40116a:	48 39 f0 	cmpq	%rsi, %rax
+  40116d:	75 f1 	jne	-15 <phase_6+0x6c>
+  40116f:	be 00 00 00 00 	movl	$0, %esi
+  401174:	eb 21 	jmp	33 <phase_6+0xa3>
+  401176:	48 8b 52 08 	movq	8(%rdx), %rdx
+  40117a:	83 c0 01 	addl	$1, %eax
+  40117d:	39 c8 	cmpl	%ecx, %eax
+  40117f:	75 f5 	jne	-11 <phase_6+0x82>
+  401181:	eb 05 	jmp	5 <phase_6+0x94>
+  401183:	ba d0 32 60 00 	movl	$6304464, %edx
+  401188:	48 89 54 74 20 	movq	%rdx, 32(%rsp,%rsi,2)
+  40118d:	48 83 c6 04 	addq	$4, %rsi
+  401191:	48 83 fe 18 	cmpq	$24, %rsi
+  401195:	74 14 	je	20 <phase_6+0xb7>
+  401197:	8b 0c 34 	movl	(%rsp,%rsi), %ecx
+  40119a:	83 f9 01 	cmpl	$1, %ecx
+  40119d:	7e e4 	jle	-28 <phase_6+0x8f>
+  40119f:	b8 01 00 00 00 	movl	$1, %eax
+  4011a4:	ba d0 32 60 00 	movl	$6304464, %edx
+  4011a9:	eb cb 	jmp	-53 <phase_6+0x82>
+  4011ab:	48 8b 5c 24 20 	movq	32(%rsp), %rbx
+  4011b0:	48 8d 44 24 28 	leaq	40(%rsp), %rax
+  4011b5:	48 8d 74 24 50 	leaq	80(%rsp), %rsi
+  4011ba:	48 89 d9 	movq	%rbx, %rcx
+  4011bd:	48 8b 10 	movq	(%rax), %rdx
+  4011c0:	48 89 51 08 	movq	%rdx, 8(%rcx)
+  4011c4:	48 83 c0 08 	addq	$8, %rax
+  4011c8:	48 39 f0 	cmpq	%rsi, %rax
+  4011cb:	74 05 	je	5 <phase_6+0xde>
+  4011cd:	48 89 d1 	movq	%rdx, %rcx
+  4011d0:	eb eb 	jmp	-21 <phase_6+0xc9>
+  4011d2:	48 c7 42 08 00 00 00 00 	movq	$0, 8(%rdx)
+  4011da:	bd 05 00 00 00 	movl	$5, %ebp
+  4011df:	48 8b 43 08 	movq	8(%rbx), %rax
+  4011e3:	8b 00 	movl	(%rax), %eax
+  4011e5:	39 03 	cmpl	%eax, (%rbx)
+  4011e7:	7d 05 	jge	5 <phase_6+0xfa>
+  4011e9:	e8 4c 02 00 00 	callq	588 <explode_bomb>
+  4011ee:	48 8b 5b 08 	movq	8(%rbx), %rbx
+  4011f2:	83 ed 01 	subl	$1, %ebp
+  4011f5:	75 e8 	jne	-24 <phase_6+0xeb>
+  4011f7:	48 83 c4 50 	addq	$80, %rsp
+  4011fb:	5b 	popq	%rbx
+  4011fc:	5d 	popq	%rbp
+  4011fd:	41 5c 	popq	%r12
+  4011ff:	41 5d 	popq	%r13
+  401201:	41 5e 	popq	%r14
+  401203:	c3 	retq
+```
+
+## Summary
+- Lab本身很有趣，如果对常用的汇编指令理解无误，耐心去解，把杂糅在一起的assembly code按功能切分好还是可以解出来的。
+- gdb常用的打断点和x p指令查看registers 或者内存中的值非常有用，大概明白程序的各个function就输入值，打断点观察寄存器的变化，不要纯看汇编去decode。我最开始就是这么做的，很折磨也很费时间。让程序跑起来才是关键，切分成小块去decode
