@@ -8,3 +8,8 @@ Computer Systems: A Programmer's Perspective. This repo records my solutions of 
   - debug with gdb
   - understanding assembly code
   - understanding lea instruction -- load effective address
+
+- [Attack Lab](https://github.com/MarekZhang/CSAPP-Lab-Solutions/tree/main/attacklab)
+  - understanding code injection attack
+  - understanding lea instruction -- load effective address
+  - 
