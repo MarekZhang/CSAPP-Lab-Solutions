@@ -54,7 +54,7 @@
 4. 400f17 ~ 400f1c 将计算方法确定，(%rbx)值为 2 * (%rbx)
 5. mov -0x4(%rbx), %eax 地址计算完再dereferecne M[%rbx - 0x4] -> %eax 而不是 M[%rbx] - 0x4 -> %eax
 6. scanf返回值为成功读取值的个数
-```
+```asm
 0000000000400efc <phase_2>:
   400efc:       55                      push   %rbp #保存main函数的stack frame
   400efd:       53                      push   %rbx 
@@ -82,9 +82,10 @@
   400f41:       5d                      pop    %rbp
   400f42:       c3                      retq
 ```
-```
+
 #以phase_2传递过来的%rsp为基准，使用%rcx, %rax, %r8, %r8, read_six_number栈空间+0x8, +0x00的位置存储scanf读取到的数值，
 #寄存器及栈空间存储的都是phase_2栈空间上的地址，scanf直接将keyboard输入的值写入
+```asm
 read_six_numbers: 
   40145c:       48 83 ec 18     subq    $24, %rsp
   401460:       48 89 f2        movq    %rsi, %rdx
@@ -118,7 +119,7 @@ read_six_numbers:
 
 6. 在查看switch语句跳转部分会将我们输入的第二值与switch分支中的值进行比较，所以phase_3 “%d %d” -- switch条件(0~7), switch 语句对应的值
 
-```
+```asm
 0000000000400f43 <phase_3>:
   400f43:	48 83 ec 18          	sub    $0x18,%rsp
   400f47:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
@@ -168,7 +169,7 @@ read_six_numbers:
 4. func4的小trick是400fe2: cmp  %edi,%ecx，其中edi为我们输入的第一个数字，只有edi <= ecx才会跳转400ff2, 而400ff2 将return value %eax置0，之后  400ff7: cmp %edi,%ecx 400ff9: jge 401007 再次比较edi和ecx的值 并且需要 %edi >= ecx才return 0，而return 0在phase_4中40104d中满足不引爆炸弹的必要条件，所以我们输入的数值只要与ecx通过 400fce~400fdf得到的结果相同就可以，而这个值为0xe >> 1 = 0x7
 5. 第二个值很简单401051行与0做比较，所以输入的两个值为 0x7 和 0x0
 
-```
+```asm
 phase_4:
 000000000040100c <phase_4>:
   40100c:       48 83 ec 18             sub    $0x18,%rsp
@@ -194,7 +195,7 @@ phase_4:
   40105d:       48 83 c4 18             add    $0x18,%rsp
   401061:       c3                      retq
 ```
-```
+```asm
 0000000000400fce <func4>:
   400fce:       48 83 ec 08             sub    $0x8,%rsp
   400fd2:       89 d0                   mov    %edx,%eax
@@ -228,7 +229,7 @@ phase_4:
 2. 有了前4个phase的练习，很容易看出，phase_5需要我们输入6位字符串，然后401096 and $0xf, %edx，就是将每一个字符的bits 与 00001111做and，得到的偏移量，到0x4024b0中取出对应的字符,使得得到得结果为"flyers". 
 3. 此题答案也不唯一，我的解是“ionefg”
 
-```
+```asm
 0000000000401062 <phase_5>:
   401062:       53                      push   %rbx
   401063:       48 83 ec 20             sub    $0x20,%rsp
@@ -281,7 +282,7 @@ phase_4:
 4. 答案是 4 3 2 1 6 5
 5. 将不同function的assembly code拆分开，会更容易理解程序
 
-```
+```asm
 phase_6:
   4010f4:	41 56 	pushq	%r14
   4010f6:	41 55 	pushq	%r13
