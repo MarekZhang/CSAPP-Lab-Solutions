@@ -82,7 +82,7 @@
   400f41:       5d                      pop    %rbp
   400f42:       c3                      retq
 ```
-```
+
 #以phase_2传递过来的%rsp为基准，使用%rcx, %rax, %r8, %r8, read_six_number栈空间+0x8, +0x00的位置存储scanf读取到的数值，
 #寄存器及栈空间存储的都是phase_2栈空间上的地址，scanf直接将keyboard输入的值写入
 ```asm
