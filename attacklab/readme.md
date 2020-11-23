@@ -103,9 +103,10 @@ fa 18 40 00 00 00 00 00
 ![](touch3.png)
 
 ## Return Oriented Programming
-第二截断ROP attack 多了两种stack protection mechanisms : 
+第二阶段 ROP attack 多了两种stack protection mechanisms : 
 > 1. It uses randomization so that the stack positions differ from one run to another. This makes it impos- sible to determine where your injected code will be > located.
 > 2. It marks the section of memory holding the stack as nonexecutable, so even if you could set the program counter to the start of your injected code, the > > program would fail with a segmentation fault.
+
 也就是说我们无法确切知道injected code的确切地址，因为栈空间的起始地址每次运行都是随机生成的，并且开辟出来的栈空间上的指令是nonexecutable。但是我们依然可以利用binary file中的程序主体的assembly code 截取部分代码并运行。farm.c 中的函数assembly code 就存在这样的漏洞可供我们利用。例如:
 ```asm
 0000000000401a03 <addval_190>:
@@ -163,3 +164,5 @@ fa 97 b9 59 00 00 00 00
 a2 19 40 00 00 00 00 00
 ec 17 40 00 00 00 00 00
 ```
+
+![](phase4_touch2.png)
