@@ -12,7 +12,7 @@ Computer Systems: A Programmer's Perspective. This repo records my solutions of 
 - [Attack Lab](https://github.com/MarekZhang/CSAPP-Lab-Solutions/tree/main/attacklab)
   - understanding code injection attack
   - understanding stack protection mecahnism
-  - understanding Return Oriented Programming attach
+  - understanding return oriented programming attack
 
 - [Cache Lab](https://github.com/MarekZhang/CSAPP-Lab-Solutions/tree/main/cachelab)
   - understanding spatial and temporal locality
