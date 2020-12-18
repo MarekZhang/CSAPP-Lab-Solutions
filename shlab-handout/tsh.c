@@ -87,6 +87,9 @@ void app_error(char *msg);
 typedef void handler_t(int);
 handler_t *Signal(int signum, handler_t *handler);
 
+/* slef defined functions */
+int is_fg_job(pid_t pid);
+
 /*
  * main - The shell's main routine 
  */
@@ -135,10 +138,9 @@ int main(int argc, char **argv)
     /* Execute the shell's read/eval loop*/ 
     while (1) {
     sigemptyset(&mask_main);/* 必须要empty，不然随机的初始值对mask有干扰 */
-    /*main process shell should block SIGTERM and SIGTSTP*/
-    sigprocmask(SIG_SETMASK, &mask_main, NULL);
+    /*main process shell should block SIGTERM */
     sigaddset(&mask_main, SIGTERM);
-    sigprocmask(SIG_BLOCK, &mask_main, NULL); 
+    sigprocmask(SIG_SETMASK, &mask_main, NULL);
 
 	/* Read command line */
 	if (emit_prompt) {
@@ -179,11 +181,11 @@ void eval(char *cmdline)
     int bg;
     pid_t fork_pid;
 
-    sigset_t mask_all, mask_one, mask_prev;
+    sigset_t mask_all, mask_three, mask_prev;
     sigfillset(&mask_all);
-    sigemptyset(&mask_one);
+    sigemptyset(&mask_three);
     sigemptyset(&mask_prev);
-    sigaddset(&mask_one, SIGCHLD);
+    sigaddset(&mask_three, SIGCHLD);
 
     strcpy(buf, cmdline);
     bg = parseline(buf, argv);
@@ -191,7 +193,7 @@ void eval(char *cmdline)
         return;
 
     if(!builtin_cmd(argv)){
-        sigprocmask(SIG_BLOCK, &mask_one, &mask_prev); /* main process block SIGCHLD */
+        sigprocmask(SIG_BLOCK, &mask_three, &mask_prev); /* main process block SIGCHLD */
         if(!bg){
             if((fork_pid = fork()) == 0){
                 sigemptyset(&mask_prev);/* unblock SIGCHLD and SIGTERM */
@@ -204,6 +206,8 @@ void eval(char *cmdline)
     //           printf("main process pid: %d\n", getpid());
                 addjob(jobs, fork_pid, FG, cmdline);
                 pid = 0;
+                /* mask_prev does not contain SIGTERM */
+                sigaddset(&mask_prev, SIGTERM);
                 while(!pid)
                     sigsuspend(&mask_prev); /*mask_prev unblock all signals(except SIGTERM), sigsuspend is atomic 从paus()中退出会重新设置mask_all为block set，所以仍需要unblock*/
                 sigprocmask(SIG_SETMASK, &mask_prev, NULL); //unblock all blocking signal 
@@ -323,6 +327,19 @@ void do_bgfg(char **argv)
             }
             job->state = BG;
             kill(job->pid, SIGCONT); 
+        }else{
+            printf("No such job\n");
+        }
+    }
+    if(!strcmp(argv[0], "fg")){
+        int job_id = atoi(strchr(argv[1], '%') + 1);
+        struct job_t * job = getjobjid(jobs, job_id);
+        if(job){
+            if(job->state == BG || job->state == ST){
+                waitfg(job->pid);
+            }
+        }else{
+            printf("No such job\n");
         }
     }
     return;
@@ -333,7 +350,25 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    struct job_t * job = getjobpid(jobs, pid);
+    if(job->state == BG){
+        kill(pid, SIGTSTP);
+        printf("Job [%d] (%d) stopped by signal 20\n", job->jid, job->pid);
+        job->state = ST;
+    }else if(job->state == ST){
+        kill(pid, SIGCONT);
+        job->state = FG;
+        while(is_fg_job(pid))
+            sleep(1);
+    }
+
     return;
+}
+
+int is_fg_job(pid_t pid){
+    struct job_t * job = getjobpid(jobs, pid);
+    if(job) return 1;
+    return 0;
 }
 
 /*****************
@@ -393,7 +428,7 @@ void sigint_handler(int sig)
         if(job->state == FG)
         {
             printf("Job [%d] (%d) terminated by signal 2\n", job->jid, job->pid);
-            kill(job->pid, SIGTERM);
+            kill(-getpid(), SIGTERM);
         }
     }
     sigprocmask(SIG_SETMASK, &mask_prev, NULL); 
@@ -419,7 +454,7 @@ void sigtstp_handler(int sig)
         if(job->state == FG){
             job->state = ST; 
             printf("Job [%d] (%d) stopped by signal 20\n", job->jid, job->pid);
-            kill(job->pid, SIGTSTP);
+            kill(-getpid(), SIGTSTP);
         }
     }
     sigprocmask(SIG_SETMASK, &mask_prev, NULL);
