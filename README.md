@@ -18,5 +18,5 @@ Computer Systems: A Programmer's Perspective. This repo records my solutions of 
   - understanding spatial and temporal locality
   - implementing LRU cache replacement policy
 
-- [Shell lab)(./shlab-handout)
+- [Shell lab](./shlab-handout)
   - Unix IPC mechanism(signal)
