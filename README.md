@@ -1,5 +1,5 @@
 # CSAPP-Lab-Solutions
-Computer Systems: A Programmer's Perspective. This repo records my solutions of the Lab assginments
+Computer Systems: A Programmer's Perspective. This repo records my solutions of the Lab assignments
 
 - [Data Lab](https://github.com/MarekZhang/CSAPP-Lab-Solutions/tree/main/datalab)
   - bitwise operations
